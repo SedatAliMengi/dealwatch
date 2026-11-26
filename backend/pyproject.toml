@@ -7,6 +7,7 @@ license = { text = "PolyForm-Noncommercial-1.0.0" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "--cov=app --cov-report=term-missing --cov-fail-under=80"
 filterwarnings = ["ignore::DeprecationWarning:apscheduler.*"]
 
