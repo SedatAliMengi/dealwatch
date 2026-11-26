@@ -5,12 +5,14 @@ polite. This source therefore:
   * caches every response in memory (default 10 minutes, stores list 24h),
   * waits at least `min_interval_seconds` between real HTTP requests,
   * fetches many games in ONE request (`/games?ids=...`, up to 25 ids),
-  * stops on HTTP 429 (rate limited) instead of retrying in a loop,
+  * retries a failed request at most ONCE (after a short wait, honouring
+    Retry-After), then gives up instead of retrying in a loop,
   * links deals through CheapShark's redirect URL, as their docs request.
 """
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from collections.abc import Callable, Sequence
@@ -30,6 +32,8 @@ from app.sources.base import (
     register,
 )
 
+log = logging.getLogger(__name__)
+
 DEAL_REDIRECT_URL = "https://www.cheapshark.com/redirect?dealID={deal_id}"
 STORES_TTL_SECONDS = 24 * 60 * 60
 BULK_LIMIT = 25  # CheapShark accepts up to 25 ids per /games?ids= call
@@ -47,6 +51,8 @@ def _money(value: Any) -> Decimal | None:
 @register
 class CheapSharkSource(PriceSource):
     name = "cheapshark"
+    MAX_ATTEMPTS = 2
+    RETRY_DELAY_SECONDS = 2.0
 
     def __init__(
         self,
@@ -95,17 +101,22 @@ class CheapSharkSource(PriceSource):
             if cached is not MISSING:
                 return cached
 
-            if self._last_request_at is not None:
-                wait = self._min_interval - (self._clock() - self._last_request_at)
-                if wait > 0:
-                    self._sleep(wait)
-            try:
-                self.request_count += 1
-                response = self._client.get(path, params=params)
-            except httpx.HTTPError as exc:
-                raise PriceSourceError(f"Could not reach CheapShark: {exc}") from exc
-            finally:
-                self._last_request_at = self._clock()
+            # One polite retry for temporary problems (network blip, 5xx, 429).
+            for attempt in range(1, self.MAX_ATTEMPTS + 1):
+                try:
+                    response = self._send(path, params)
+                except httpx.HTTPError as exc:
+                    if attempt < self.MAX_ATTEMPTS:
+                        log.warning("CheapShark request failed (%s), retrying once", exc)
+                        self._sleep(self.RETRY_DELAY_SECONDS)
+                        continue
+                    raise PriceSourceError(f"Could not reach CheapShark: {exc}") from exc
+                if response.status_code == 429 or response.status_code >= 500:
+                    if attempt < self.MAX_ATTEMPTS:
+                        log.warning("CheapShark HTTP %s, retrying once", response.status_code)
+                        self._sleep(self._retry_delay(response))
+                        continue
+                break
 
         if response.status_code == 429:
             raise PriceSourceError("CheapShark rate limit reached, try again later")
@@ -118,6 +129,26 @@ class CheapSharkSource(PriceSource):
 
         self._cache.set(key, data, ttl)
         return data
+
+    def _send(self, path: str, params: dict[str, Any]) -> httpx.Response:
+        """One real HTTP request, spaced at least min_interval after the last."""
+        if self._last_request_at is not None:
+            wait = self._min_interval - (self._clock() - self._last_request_at)
+            if wait > 0:
+                self._sleep(wait)
+        try:
+            self.request_count += 1
+            return self._client.get(path, params=params)
+        finally:
+            self._last_request_at = self._clock()
+
+    def _retry_delay(self, response: httpx.Response) -> float:
+        """Honour a short Retry-After header, otherwise wait the default."""
+        try:
+            seconds = float(response.headers.get("Retry-After", ""))
+        except ValueError:
+            return self.RETRY_DELAY_SECONDS
+        return seconds if 0 <= seconds <= 10 else self.RETRY_DELAY_SECONDS
 
     def _store_names(self) -> dict[str, str]:
         data = self._get("/stores", {}, ttl=STORES_TTL_SECONDS)

@@ -117,7 +117,9 @@ That works because `registry.py` automatically imports every file in `app/source
 
 Docker is great for servers, but on your own PC you just want to double-click. So there is a second way to run the same code:
 
-- `Start Dealwatch.bat` is a **batch file**, a small Windows script that runs when you double-click it. It starts `launcher/start.ps1`, a **PowerShell** script (PowerShell is Windows' more powerful scripting language).
+- The desktop icon runs `Start Dealwatch.vbs`, a **VBScript** file (an old Windows scripting format). We use it because Windows can run it without opening any console window. It starts `launcher/start.ps1` hidden. That is a **PowerShell** script (PowerShell is Windows' more powerful scripting language).
+- Instead of a window, the script shows a **tray icon**, a small icon next to the clock, with a right-click menu: Open, Check prices now, Show log, Quit. A **mutex** (a system-wide "only one at a time" flag) makes sure double-clicking twice never starts two copies.
+- The server runs as a hidden **background process** (a program running with no window), and its output goes to `data/server.log`, so problems can be looked up later.
 - The script uses **SQLite**, a database that is just one file (`data/dealwatch.db`) and needs no server, instead of PostgreSQL. The same SQLAlchemy code works with both, so nothing in the app changes. Only the `DATABASE_URL` setting is different.
 - FastAPI also serves the built React page (setting `FRONTEND_DIST`), so one process does everything and the page is at http://localhost:8765.
 - **Moving the folder is safe**: every path is worked out from where the script is, and the data file lives inside the folder.

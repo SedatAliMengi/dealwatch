@@ -150,6 +150,53 @@ def test_cheapshark_bad_responses_raise_source_error(response, message):
         source.search("batman")
 
 
+def test_cheapshark_retries_once_after_temporary_error():
+    calls = []
+
+    def flaky(request):
+        calls.append(1)
+        return httpx.Response(503) if len(calls) == 1 else httpx.Response(200, json=SEARCH)
+
+    clock = FakeClock()
+    source = make_source(flaky, clock=clock, min_interval_seconds=0)
+    assert source.search("batman")[0].title == "LEGO Batman"
+    assert source.request_count == 2
+    assert clock.slept == [CheapSharkSource.RETRY_DELAY_SECONDS]
+
+
+def test_cheapshark_retry_honours_short_retry_after():
+    responses = [httpx.Response(429, headers={"Retry-After": "5"}), httpx.Response(200, json=SEARCH)]
+    clock = FakeClock()
+    source = make_source(lambda r: responses.pop(0), clock=clock, min_interval_seconds=0)
+    source.search("batman")
+    assert clock.slept == [5.0]
+
+
+@pytest.mark.parametrize("header", ["600", "soon"])
+def test_cheapshark_ignores_long_or_bad_retry_after(header):
+    clock = FakeClock()
+    source = make_source(
+        lambda r: httpx.Response(429, headers={"Retry-After": header}),
+        clock=clock, min_interval_seconds=0,
+    )
+    with pytest.raises(PriceSourceError):
+        source.search("batman")
+    assert clock.slept == [CheapSharkSource.RETRY_DELAY_SECONDS]
+    assert source.request_count == 2  # never more than one retry
+
+
+def test_cheapshark_recovers_from_one_network_error():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        if len(calls) == 1:
+            raise httpx.ConnectTimeout("blip")
+        return httpx.Response(200, json=SEARCH)
+
+    assert make_source(handler, min_interval_seconds=0).search("batman")
+
+
 def test_cheapshark_bad_bulk_response_raises():
     source = make_source(lambda request: httpx.Response(200, json=[]))
     with pytest.raises(PriceSourceError, match="Unexpected bulk"):

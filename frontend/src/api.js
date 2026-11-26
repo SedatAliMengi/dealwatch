@@ -1,10 +1,16 @@
 // Small wrapper around fetch: every call goes to the FastAPI backend under /api.
 
 async function request(path, options = {}) {
-  const res = await fetch(`/api${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  let res;
+  try {
+    res = await fetch(`/api${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
+  } catch {
+    // The browser could not reach the server at all (it was stopped).
+    throw new Error("Can't reach the Dealwatch server. Is it still running? Start it again and reload this page.");
+  }
   if (res.status === 204) return null;
   const body = await res.json().catch(() => null);
   if (!res.ok) {

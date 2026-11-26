@@ -47,12 +47,14 @@ PRICE_SOURCE=fake DEMO_SEED=true docker compose up --build
 Needs Python 3.11+ and Node.js (Node is only needed to build the page once, or after you change it).
 
 1. Double-click **`Create Desktop Shortcut.bat`** once. A **Dealwatch** icon appears on your desktop.
-2. Double-click the icon. A small window opens, sets everything up on the first run, and opens http://localhost:8765 in your browser.
-3. Close that window to stop Dealwatch.
+2. Double-click the icon (or `Start Dealwatch.vbs`). **No console window opens.** The first start sets everything up, then http://localhost:8765 opens in your browser.
+3. Dealwatch keeps running in the **tray** (the icons next to the clock). Right-click its icon for **Open Dealwatch**, **Check prices now**, **Show log** and **Quit Dealwatch**.
 
-How it works: [`launcher/start.ps1`](launcher/start.ps1) runs the API with SQLite and lets FastAPI serve the built React page, so it's one process. Your data is kept in `data/dealwatch.db` inside the project folder. It also runs one price check every time it starts.
+Double-clicking again while it runs just opens the page; it never starts a second copy.
 
-**Moving the folder:** move it anywhere, even to a path with spaces or commas. Then double-click `Start Dealwatch.bat` (or `Create Desktop Shortcut.bat`) in the new location once, and the desktop icon is updated to point there. Your data moves with the folder.
+How it works: [`launcher/start.ps1`](launcher/start.ps1) runs hidden, shows the tray icon, and starts the API with SQLite. FastAPI also serves the built React page, so it's one process. Your data is in `data/dealwatch.db`, and logs are in `data/launcher.log` (setup) and `data/server.log` (the API). Every start also runs one price check.
+
+**Moving the folder:** move it anywhere, even to a path with spaces or commas. Then double-click `Start Dealwatch.vbs` (or `Create Desktop Shortcut.bat`) in the new location once, and the desktop icon is updated to point there. Your data moves with the folder.
 
 **Updating:** pull or edit the code and start it as usual. The launcher notices changed `requirements.txt` or frontend files and reinstalls or rebuilds only what changed. New database migrations are applied automatically.
 
