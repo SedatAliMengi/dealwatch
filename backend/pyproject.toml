@@ -1,0 +1,15 @@
+[project]
+name = "dealwatch"
+version = "1.0.0"
+description = "Game price alerts: FastAPI + PostgreSQL + a pluggable PriceSource"
+requires-python = ">=3.11"
+license = { text = "PolyForm-Noncommercial-1.0.0" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=app --cov-report=term-missing --cov-fail-under=80"
+filterwarnings = ["ignore::DeprecationWarning:apscheduler.*"]
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
