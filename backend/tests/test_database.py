@@ -146,6 +146,15 @@ def test_create_app_builds_its_own_engine_and_source(tmp_path):
     assert app.state.price_source.name == "fake"
 
 
+def test_app_can_serve_the_built_frontend(tmp_path, session_factory, fake_source):
+    (tmp_path / "index.html").write_text("<div id='root'></div>")
+    s = Settings(price_source="fake", scheduler_enabled=False, frontend_dist=str(tmp_path))
+    app = create_app(settings=s, session_factory=session_factory, source=fake_source)
+    with TestClient(app) as c:
+        assert "root" in c.get("/").text
+        assert c.get("/api/health").json()["status"] == "ok"  # API still wins
+
+
 # ---- demo seed ---------------------------------------------------------
 
 

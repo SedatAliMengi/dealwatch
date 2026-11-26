@@ -113,6 +113,20 @@ That works because `registry.py` automatically imports every file in `app/source
 
 ---
 
+## 4b. The desktop version (double-click)
+
+Docker is great for servers, but on your own PC you just want to double-click. So there is a second way to run the same code:
+
+- `Start Dealwatch.bat` is a **batch file**, a small Windows script that runs when you double-click it. It starts `launcher/start.ps1`, a **PowerShell** script (PowerShell is Windows' more powerful scripting language).
+- The script uses **SQLite**, a database that is just one file (`data/dealwatch.db`) and needs no server, instead of PostgreSQL. The same SQLAlchemy code works with both, so nothing in the app changes. Only the `DATABASE_URL` setting is different.
+- FastAPI also serves the built React page (setting `FRONTEND_DIST`), so one process does everything and the page is at http://localhost:8765.
+- **Moving the folder is safe**: every path is worked out from where the script is, and the data file lives inside the folder.
+- **Updating is automatic**: the script keeps a **fingerprint** (a hash, a short code that changes whenever a file's content changes) of `requirements.txt` and the frontend files. If a fingerprint changed, it reinstalls or rebuilds. Otherwise it skips that step, so normal starts are fast.
+
+Interview angle: "The same backend runs in Docker with PostgreSQL for deployment, and as a one-click desktop app with SQLite. That works because all configuration comes from environment variables."
+
+---
+
 ## 5. Why each tool was chosen
 
 | Tool | What it is (one sentence) | Why here |

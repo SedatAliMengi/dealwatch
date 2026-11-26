@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     cheapshark_min_interval_seconds: float = Field(default=1.0, ge=0)
     http_timeout_seconds: float = Field(default=10.0, gt=0)
 
+    # Folder with the built React page (frontend/dist). When set, the API also
+    # serves the page itself, so one process runs everything (desktop launcher).
+    frontend_dist: str | None = None
+
     # Comma-separated list of origins allowed to call the API from a browser.
     cors_origins: str = "http://localhost:5173,http://localhost:8080"
 

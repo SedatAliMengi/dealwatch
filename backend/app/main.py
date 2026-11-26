@@ -5,10 +5,12 @@
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings, get_settings
@@ -76,4 +78,8 @@ def create_app(
 
     for router in (system.router, games.router, watchlist.router, alerts.router):
         app.include_router(router, prefix="/api")
+
+    # Mounted last, so /api/* routes always win over static files.
+    if settings.frontend_dist and Path(settings.frontend_dist).is_dir():
+        app.mount("/", StaticFiles(directory=settings.frontend_dist, html=True), name="web")
     return app

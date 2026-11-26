@@ -42,7 +42,23 @@ Settings come from `.env` if you create one (`cp .env.example .env`); otherwise 
 PRICE_SOURCE=fake DEMO_SEED=true docker compose up --build
 ```
 
-### Run without Docker
+### Windows desktop app (double-click, no Docker)
+
+Needs Python 3.11+ and Node.js (Node is only needed to build the page once, or after you change it).
+
+1. Double-click **`Create Desktop Shortcut.bat`** once. A **Dealwatch** icon appears on your desktop.
+2. Double-click the icon. A small window opens, sets everything up on the first run, and opens http://localhost:8765 in your browser.
+3. Close that window to stop Dealwatch.
+
+How it works: [`launcher/start.ps1`](launcher/start.ps1) runs the API with SQLite and lets FastAPI serve the built React page, so it's one process. Your data is kept in `data/dealwatch.db` inside the project folder. It also runs one price check every time it starts.
+
+**Moving the folder:** move it anywhere, even to a path with spaces or commas. Then double-click `Start Dealwatch.bat` (or `Create Desktop Shortcut.bat`) in the new location once, and the desktop icon is updated to point there. Your data moves with the folder.
+
+**Updating:** pull or edit the code and start it as usual. The launcher notices changed `requirements.txt` or frontend files and reinstalls or rebuilds only what changed. New database migrations are applied automatically.
+
+Optional settings go in `backend\.env` (see `.env.example`), e.g. `PRICE_SOURCE=fake`. To change the port, set the `DEALWATCH_PORT` environment variable.
+
+### Run without Docker (developer mode)
 
 ```bash
 # API (Python 3.11+). SQLite by default, so no database to install.
@@ -165,6 +181,7 @@ backend/
   alembic/             database migrations
   tests/
 frontend/              React (Vite) page, nginx config for Docker
+launcher/              Windows double-click launcher + desktop shortcut + icon
 docker-compose.yml     db + api + web
 ```
 
