@@ -54,7 +54,7 @@ Double-clicking again while it runs just opens the page; it never starts a secon
 
 How it works: [`launcher/start.ps1`](launcher/start.ps1) runs hidden, shows the tray icon, and starts the API with SQLite. FastAPI also serves the built React page, so it's one process. Your data is in `data/dealwatch.db`, and logs are in `data/launcher.log` (setup) and `data/server.log` (the API). Every start also runs one price check.
 
-**Moving the folder:** move it anywhere, even to a path with spaces or commas. Then double-click `Start Dealwatch.vbs` (or `Create Desktop Shortcut.bat`) in the new location once, and the desktop icon is updated to point there. Your data moves with the folder.
+**Moving the folder:** move or rename it whenever you like (stop Dealwatch first from the tray), even to a path with spaces or commas. The desktop icon keeps working. It doesn't point into the project folder; it runs a small helper in `%LOCALAPPDATA%\Dealwatch` that remembers where the project is. If the project has moved, the helper searches Desktop, Documents and Downloads for it, then remembers the new place. If you put it somewhere else, double-click `Start Dealwatch.vbs` in the new folder once. Your data moves with the folder.
 
 **Updating:** pull or edit the code and start it as usual. The launcher notices changed `requirements.txt` or frontend files and reinstalls or rebuilds only what changed. New database migrations are applied automatically.
 

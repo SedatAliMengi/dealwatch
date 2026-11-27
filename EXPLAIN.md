@@ -122,7 +122,7 @@ Docker is great for servers, but on your own PC you just want to double-click. S
 - The server runs as a hidden **background process** (a program running with no window), and its output goes to `data/server.log`, so problems can be looked up later.
 - The script uses **SQLite**, a database that is just one file (`data/dealwatch.db`) and needs no server, instead of PostgreSQL. The same SQLAlchemy code works with both, so nothing in the app changes. Only the `DATABASE_URL` setting is different.
 - FastAPI also serves the built React page (setting `FRONTEND_DIST`), so one process does everything and the page is at http://localhost:8765.
-- **Moving the folder is safe**: every path is worked out from where the script is, and the data file lives inside the folder.
+- **Moving the folder is safe**: every path is worked out from where the script is, and the data file lives inside the folder. The desktop icon points to a small helper in `%LOCALAPPDATA%\Dealwatch` (a folder that never moves). The helper remembers where the project is, and if it was moved, it searches for it and remembers the new place.
 - **Updating is automatic**: the script keeps a **fingerprint** (a hash, a short code that changes whenever a file's content changes) of `requirements.txt` and the frontend files. If a fingerprint changed, it reinstalls or rebuilds. Otherwise it skips that step, so normal starts are fast.
 
 Interview angle: "The same backend runs in Docker with PostgreSQL for deployment, and as a one-click desktop app with SQLite. That works because all configuration comes from environment variables."
